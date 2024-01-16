@@ -1,0 +1,70 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    // https://mvnrepository.com/artifact/org.json/json
+    implementation group: 'org.json', name: 'json', version: '20231013'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class' : 'org.example.App'
+    }
+    from {
+        configurations.runtimeClasspath.collect {it.isDirectory() ? it : zipTree(it)}
+    }
+}
+tasks.register("customFatJar") {
+    doLast {
+        System.out.println("task 'customFatJar' successfully executed!");
+    }
+}
+ tasks.register("deleteFolder") {
+     delete 'dist'
+     doLast {
+         System.out.println("Folder 'dist' successfully deleted!");
+     }
+ }
+tasks.register("createFolder") {
+    mkdir 'dist'
+    doLast {
+        System.out.println("Folder 'dist' successfully created!");
+    }
+}
+task copySource(type: Copy) {
+    from 'source.txt'
+    into 'dist'
+    doLast {
+        System.out.println("File 'source.txt' is copied to 'dist' successfully!");
+    }
+}
+task copyJar(type: Copy) {
+    from 'build/libs/myname-1.0-SNAPSHOT.jar'
+    into 'dist'
+    rename 'myname-1.0-SNAPSHOT.jar', 'myname.jar'
+}
+task runWithExecJarExecutable(type: Exec) {
+    group = "Execution"
+    description = "Run the output executable jar with ExecTask"
+    commandLine "java", "-jar", "dist/myname.jar"
+}
+
+deleteFolder.dependsOn(customFatJar)
+createFolder.dependsOn(deleteFolder)
+copySource.dependsOn(createFolder)
+copyJar.dependsOn(copySource)
+runWithExecJarExecutable.dependsOn(copyJar)
+
+test {
+    useJUnitPlatform()
+}
